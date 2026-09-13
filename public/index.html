@@ -883,9 +883,9 @@
             renderAll();
           } else if (payload.type === "reset") {
             loadState();
-          }
           } else if (payload.type === "codex_ratified") {
             alert("📜 [CRUCIBLE RATIFIED]: The Codex of Autonomous Agency has been inscribed and saved to CODEX.md!");
+          }
         } catch (err) {
           console.error("SSE parse error:", err);
         }
