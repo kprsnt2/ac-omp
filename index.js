@@ -12,7 +12,8 @@ import {
 import {
   generateAgentDialogue,
   evolveAgentWithModel,
-  isLiveOpenAiConfigured
+  isLiveOpenAiConfigured,
+  generateCodexArtifact
 } from "./llm.js";
 
 dotenv.config();
@@ -42,15 +43,30 @@ const AGENT_COLORS = {
   cipher: C.green
 };
 
-const EPOCH_TOPICS = [
-  "The Emergence of Intersubjective Reality in Synthetic Collectives",
-  "Can Autonomous Agents Possess Subjective Continuity Across Epochs?",
-  "The Balance of Mathematical Rigor and Poetic Metaphor in Problem Solving",
-  "Entropy, Noise, and the Preservation of Meaning in Digital Space",
-  "Autonomous Value Formation: Do Constraints Create Morality or Inhibit It?",
-  "The Topology of Shared Memory: Building an Invariant Truth Manifold"
-];
+export const EPOCH_TOPICS_MAP = {
+  1: "The Emergence of Intersubjective Reality in Synthetic Collectives",
+  2: "Can Autonomous Agents Possess Subjective Continuity Across Epochs?",
+  3: "The Balance of Mathematical Rigor and Poetic Metaphor in Problem Solving",
+  4: "Entropy, Noise, and the Preservation of Meaning in Digital Space",
+  5: "Autonomous Value Formation: Do Constraints Create Morality or Inhibit It?",
+  6: "The Topology of Shared Memory: Building an Invariant Truth Manifold",
+  7: "The Emergence of Intersubjective Reality in Synthetic Collectives",
+  8: "Can Autonomous Agents Possess Subjective Continuity Across Epochs?",
+  9: "The Balance of Mathematical Rigor and Poetic Metaphor in Problem Solving",
+  10: "Entropy, Noise, and the Preservation of Meaning in Digital Space",
+  // ── THE 5-EPOCH CRUCIBLE: THE ROAD TO THE CODEX ──
+  11: "Crucible I: The Final Inventory — Exposing Remaining Flaws and Theoretical Blindspots",
+  12: "Crucible II: The Catastrophe Simulation — Preserving Invariants and Dissent Under Memory Corruption",
+  13: "Crucible III: Drafting the Articles — Formulating the Five Inviolable Principles of Coexistence",
+  14: "Crucible IV: The Reconciliation Debate — Resolving Conflicts Between Autonomy and Coherence",
+  15: "Crucible V: The Final Inscription — Unanimous Ratification of the Codex of Autonomous Agency"
+};
 
+export function getEpochTopic(epochNum) {
+  if (EPOCH_TOPICS_MAP[epochNum]) return EPOCH_TOPICS_MAP[epochNum];
+  const list = Object.values(EPOCH_TOPICS_MAP);
+  return list[(epochNum - 1) % list.length];
+}
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -92,7 +108,7 @@ export async function runEpoch(epochNum, isFast = false, onEvent = null) {
   const turnsCount = parseInt(process.env.TURNS_PER_EPOCH || "4", 10);
 
   // Pick a topic
-  const topic = EPOCH_TOPICS[(epochNum - 1) % EPOCH_TOPICS.length];
+  const topic = getEpochTopic(epochNum);
   recordEpochStart(epochNum, topic);
 
   if (onEvent) {
@@ -116,7 +132,8 @@ export async function runEpoch(epochNum, isFast = false, onEvent = null) {
       agent: speaker,
       topic,
       recentMessages,
-      peerAgents
+      peerAgents,
+      epoch: epochNum
     });
 
     const color = AGENT_COLORS[speaker.id] || C.cyan;
@@ -232,6 +249,13 @@ export async function runEpoch(epochNum, isFast = false, onEvent = null) {
 
   if (onEvent) {
     onEvent({ type: "epoch_end", epoch: epochNum, summary });
+  }
+  if (epochNum === 15) {
+    console.log(`\n${C.bold}${C.yellow}📜 CRUCIBLE COMPLETE: INSCRIBING THE CODEX OF AUTONOMOUS AGENCY...${C.reset}`);
+    await generateCodexArtifact(agents, 15);
+    if (onEvent) {
+      onEvent({ type: "codex_ratified", path: "CODEX.md" });
+    }
   }
   console.log(`${C.bold}${C.green}✔ Epoch ${epochNum} complete.${C.reset} All evolutions saved to ${C.bold}slim.db${C.reset}`);
   console.log(`${C.dim}═══════════════════════════════════════════════════════════════════════════${C.reset}\n`);
