@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Cosmos — AC_omp Agent Evolution</title>
+  <style>
+    :root {
+      --bg: #07090e;
+      --card-bg: #0d121d;
+      --card-border: #1a2333;
+      --text: #e2e8f0;
+      --text-dim: #94a3b8;
+      --text-muted: #64748b;
+      --nexus: #00e5ff;
+      --axiom: #ffca28;
+      --muse: #f43f5e;
+      --cipher: #10b981;
+      --accent: #6366f1;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: rgba(13, 18, 29, 0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--card-border);
+      padding: 1rem 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-logo {
+      font-size: 1.5rem;
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #fff 30%, var(--nexus) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-sub {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+
+    .status-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: rgba(26, 35, 51, 0.6);
+      border: 1px solid var(--card-border);
+      color: var(--text-dim);
+    }
+
+    .badge.active {
+      border-color: rgba(0, 229, 255, 0.4);
+      color: #fff;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+      display: inline-block;
+      box-shadow: 0 0 8px #10b981;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    button {
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+      background: var(--card-bg);
+      color: var(--text);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    button:hover:not(:disabled) {
+      border-color: var(--accent);
+      background: #151d2c;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #4f46e5, #6366f1);
+      border-color: #6366f1;
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #4338ca, #4f46e5);
+      border-color: #4f46e5;
+    }
+
+    .btn-toggle.active {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: #10b981;
+      color: #10b981;
+    }
+
+    main {
+      padding: 1.5rem 2rem;
+      max-width: 1600px;
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      flex: 1;
+    }
+
+    /* Agent Cards Grid */
+    .agents-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .agent-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      transition: border-color 0.3s ease, transform 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .agent-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--agent-color, var(--nexus));
+      opacity: 0.8;
+    }
+
+    .agent-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .agent-name-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .agent-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--agent-color, var(--text));
+      border: 1px solid var(--agent-color, var(--card-border));
+    }
+
+    .agent-title {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #fff;
+    }
+
+    .agent-archetype {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    .gen-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--agent-color, var(--card-border));
+      color: var(--agent-color, var(--text));
+    }
+
+    .agent-philosophy {
+      font-size: 0.78rem;
+      font-style: italic;
+      color: var(--text-dim);
+      border-left: 2px solid var(--agent-color, var(--card-border));
+      padding-left: 0.5rem;
+      margin: 0.2rem 0;
+    }
+
+    .traits-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .trait-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+    }
+
+    .trait-bar-wrap {
+      width: 60%;
+      height: 5px;
+      background: #1a2333;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .trait-bar-fill {
+      height: 100%;
+      background: var(--agent-color, var(--nexus));
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+
+    .agent-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--card-border);
+      padding-top: 0.5rem;
+      margin-top: auto;
+    }
+
+    /* Content Layout */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 2fr 1.2fr;
+      gap: 1.5rem;
+      flex: 1;
+    }
+
+    @media (max-width: 1024px) {
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      max-height: calc(100vh - 360px);
+      min-height: 480px;
+    }
+
+    .panel-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #0f1523;
+    }
+
+    .panel-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .topic-banner {
+      padding: 0.8rem 1.25rem;
+      background: rgba(99, 102, 241, 0.08);
+      border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+      font-size: 0.85rem;
+      color: #c7d2fe;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .topic-banner strong {
+      color: #fff;
+    }
+
+    .feed-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .chat-bubble {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      background: #121826;
+      border: 1px solid var(--card-border);
+      border-left: 3px solid var(--agent-color, var(--nexus));
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .bubble-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.75rem;
+    }
+
+    .bubble-sender {
+      font-weight: 700;
+      color: var(--agent-color, var(--text));
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .bubble-target {
+      color: var(--text-muted);
+    }
+
+    .bubble-time {
+      color: var(--text-muted);
+      font-size: 0.7rem;
+    }
+
+    .thought-callout {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-style: italic;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+      margin-bottom: 0.2rem;
+    }
+
+    .bubble-text {
+      font-size: 0.88rem;
+      color: var(--text);
+      line-height: 1.45;
+    }
+
+    /* Evolution Timeline */
+    .evo-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      padding: 0.85rem 1rem;
+      background: #121826;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      font-size: 0.8rem;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .evo-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.75rem;
+    }
+
+    .evo-agent {
+      font-weight: 700;
+      color: var(--agent-color, var(--nexus));
+    }
+
+    .evo-gen {
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .evo-insight {
+      color: var(--text);
+      font-style: italic;
+      line-height: 1.4;
+    }
+
+    .evo-shifts {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .shift-chip {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .shift-chip.pos {
+      color: #34d399;
+    }
+
+    .shift-chip.neg {
+      color: #f87171;
+    }
+
+    .empty-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      padding: 3rem;
+      text-align: center;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span class="brand-logo">🪐</span>
+      <div>
+        <div class="brand-title">AGENT COSMOS</div>
+        <div class="brand-sub">AC_omp · Autonomous Agent Evolution Substrate</div>
+      </div>
+    </div>
+
+    <div class="status-group">
+      <div class="badge active" id="badge-epoch">
+        <span>Epoch:</span> <span id="current-epoch">0</span>
+      </div>
+      <div class="badge" id="badge-model">
+        <span class="dot" id="model-dot"></span>
+        <span id="model-name">gpt-5.4-mini</span>
+      </div>
+      <div class="badge">
+        <span>DB:</span> <span>slim.db (SQLite)</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn-primary" id="btn-epoch" onclick="triggerEpoch()">
+        <span>▶</span> <span>Run Epoch</span>
+      </button>
+      <button class="btn-toggle" id="btn-auto" onclick="toggleAutoPlay()">
+        <span>⚡</span> <span id="auto-text">Auto-Play: OFF</span>
+      </button>
+      <button onclick="resetDb()">
+        <span>↺</span> <span>Reset</span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <!-- 4 Active Agents Showcase -->
+    <section class="agents-grid" id="agents-grid">
+      <!-- Injected via JavaScript -->
+    </section>
+
+    <!-- Main Content: Live Conversation + Evolution Ledger -->
+    <section class="content-grid">
+      <!-- Conversation Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span>💬 Live Agent Conversation</span>
+          </div>
+          <span class="badge" id="dialogues-count">0 messages</span>
+        </div>
+        <div class="topic-banner" id="topic-banner">
+          <span>Inquiry Topic:</span> <strong id="topic-text">Awaiting next epoch...</strong>
+        </div>
+        <div class="feed-container" id="chat-feed">
+          <div class="empty-state">Click "Run Epoch" or "Auto-Play" to begin live conversation.</div>
+        </div>
+      </div>
+
+      <!-- Evolution Ledger Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span>🧬 Auto-Evolution Ledger</span>
+          </div>
+          <span class="badge" id="evolutions-count">0 evolutions</span>
+        </div>
+        <div class="feed-container" id="evo-feed">
+          <div class="empty-state">No evolutions recorded yet.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const AGENT_COLORS = {
+      nexus: "#00e5ff",
+      axiom: "#ffca28",
+      muse: "#f43f5e",
+      cipher: "#10b981"
+    };
+
+    let state = {
+      agents: [],
+      latestEpoch: 0,
+      conversations: [],
+      evolutions: [],
+      isEpochRunning: false,
+      isAutoPlaying: false
+    };
+
+    async function loadState() {
+      try {
+        const res = await fetch("/api/state");
+        const data = await res.json();
+        state = data;
+        renderAll();
+      } catch (err) {
+        console.error("Failed to load state:", err);
+      }
+    }
+
+    function renderAll() {
+      document.getElementById("current-epoch").textContent = state.latestEpoch;
+      document.getElementById("model-name").textContent = `${state.model} (${state.isLiveOpenAi ? "Live OpenAI" : "Adaptive Engine"})`;
+      document.getElementById("model-dot").style.background = state.isLiveOpenAi ? "#10b981" : "#f59e0b";
+      document.getElementById("model-dot").style.boxShadow = state.isLiveOpenAi ? "0 0 8px #10b981" : "0 0 8px #f59e0b";
+
+      // Controls
+      const btnEpoch = document.getElementById("btn-epoch");
+      const btnAuto = document.getElementById("btn-auto");
+      const autoText = document.getElementById("auto-text");
+
+      if (state.isEpochRunning) {
+        btnEpoch.disabled = true;
+        btnEpoch.innerHTML = `<span class="spinner"></span> <span>Running...</span>`;
+      } else {
+        btnEpoch.disabled = false;
+        btnEpoch.innerHTML = `<span>▶</span> <span>Run Epoch</span>`;
+      }
+
+      if (state.isAutoPlaying) {
+        btnAuto.classList.add("active");
+        autoText.textContent = "Auto-Play: ON";
+      } else {
+        btnAuto.classList.remove("active");
+        autoText.textContent = "Auto-Play: OFF";
+      }
+
+      renderAgents();
+      renderConversations();
+      renderEvolutions();
+    }
+
+    function renderAgents() {
+      const grid = document.getElementById("agents-grid");
+      grid.innerHTML = state.agents.map(a => {
+        const color = AGENT_COLORS[a.id] || "#00e5ff";
+        const traits = a.traits || {};
+
+        return `
+          <div class="agent-card" style="--agent-color: ${color}">
+            <div class="agent-header">
+              <div class="agent-name-wrap">
+                <div class="agent-avatar">${a.name.charAt(0)}</div>
+                <div>
+                  <div class="agent-title">${a.name}</div>
+                  <div class="agent-archetype">${a.archetype}</div>
+                </div>
+              </div>
+              <div class="gen-badge">GEN ${a.generation}</div>
+            </div>
+
+            <div class="agent-philosophy">"${a.core_philosophy}"</div>
+
+            <div class="traits-list">
+              ${Object.entries(traits).map(([t, v]) => `
+                <div class="trait-row">
+                  <span>${t.charAt(0).toUpperCase() + t.slice(1)}</span>
+                  <div class="trait-bar-wrap">
+                    <div class="trait-bar-fill" style="width: ${v}%;"></div>
+                  </div>
+                  <span>${v}</span>
+                </div>
+              `).join("")}
+            </div>
+
+            <div class="agent-footer">
+              <span>Dialogues: ${a.total_dialogues || 0}</span>
+              <span>${a.evolution_notes ? a.evolution_notes.slice(0, 35) + "..." : "Active"}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderConversations() {
+      const feed = document.getElementById("chat-feed");
+      const count = document.getElementById("dialogues-count");
+      count.textContent = `${state.conversations.length} messages`;
+
+      if (state.conversations.length === 0) {
+        feed.innerHTML = `<div class="empty-state">Click "Run Epoch" or "Auto-Play" to begin live conversation.</div>`;
+        return;
+      }
+
+      // Update topic banner with latest conversation topic
+      const latest = state.conversations[state.conversations.length - 1];
+      if (latest && latest.topic) {
+        document.getElementById("topic-text").textContent = latest.topic;
+      }
+
+      feed.innerHTML = state.conversations.map(c => {
+        const color = AGENT_COLORS[c.speaker_id] || "#00e5ff";
+        const speakerName = c.speaker_id.charAt(0).toUpperCase() + c.speaker_id.slice(1);
+        const directTo = c.listener_id && c.listener_id !== "collective" ? `➔ to ${c.listener_id}` : "(to collective)";
+        const time = new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        return `
+          <div class="chat-bubble" style="--agent-color: ${color}">
+            <div class="bubble-header">
+              <span class="bubble-sender">
+                ● ${speakerName} <span class="bubble-target">${directTo}</span>
+              </span>
+              <span class="bubble-time">Epoch ${c.epoch} · Turn ${c.turn} · ${time}</span>
+            </div>
+            ${c.thought ? `<div class="thought-callout">💭 thought: "${c.thought}"</div>` : ""}
+            <div class="bubble-text">"${c.message}"</div>
+          </div>
+        `;
+      }).join("");
+
+      feed.scrollTop = feed.scrollHeight;
+    }
+
+    function renderEvolutions() {
+      const feed = document.getElementById("evo-feed");
+      const count = document.getElementById("evolutions-count");
+      count.textContent = `${state.evolutions.length} evolutions`;
+
+      if (state.evolutions.length === 0) {
+        feed.innerHTML = `<div class="empty-state">No evolutions recorded yet.</div>`;
+        return;
+      }
+
+      feed.innerHTML = state.evolutions.map(e => {
+        const color = AGENT_COLORS[e.agent_id] || "#00e5ff";
+        const agentName = e.agent_id.charAt(0).toUpperCase() + e.agent_id.slice(1);
+        const shifts = e.trait_changes || {};
+
+        return `
+          <div class="evo-item" style="--agent-color: ${color}">
+            <div class="evo-top">
+              <span class="evo-agent">● ${agentName}</span>
+              <span class="evo-gen">Epoch ${e.epoch} · Gen ${e.prev_gen} ➔ Gen ${e.new_gen}</span>
+            </div>
+            <div class="evo-insight">"${e.learned_insight}"</div>
+            <div class="evo-shifts">
+              ${Object.entries(shifts).map(([k, v]) => `
+                <span class="shift-chip ${v >= 0 ? "pos" : "neg"}">${k}: ${v >= 0 ? `+${v}` : v}</span>
+              `).join("")}
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      feed.scrollTop = feed.scrollHeight;
+    }
+
+    async function triggerEpoch() {
+      state.isEpochRunning = true;
+      renderAll();
+      try {
+        await fetch("/api/epoch", { method: "POST" });
+      } catch (err) {
+        console.error("Error triggering epoch:", err);
+      }
+    }
+
+    async function toggleAutoPlay() {
+      try {
+        const res = await fetch("/api/auto", { method: "POST" });
+        const data = await res.json();
+        state.isAutoPlaying = data.isAutoPlaying;
+        renderAll();
+      } catch (err) {
+        console.error("Error toggling autoplay:", err);
+      }
+    }
+
+    async function resetDb() {
+      if (!confirm("Reset all agents back to Generation 1 and clear slim.db history?")) return;
+      try {
+        await fetch("/api/reset", { method: "POST" });
+        await loadState();
+      } catch (err) {
+        console.error("Error resetting database:", err);
+      }
+    }
+
+    // Connect to Server-Sent Events (SSE) for live stream
+    function setupSSE() {
+      const evtSource = new EventSource("/api/stream");
+
+      evtSource.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+
+          if (payload.type === "epoch_start") {
+            document.getElementById("topic-text").textContent = payload.topic;
+            document.getElementById("current-epoch").textContent = payload.epoch;
+            state.latestEpoch = payload.epoch;
+            state.isEpochRunning = true;
+            renderAll();
+          } else if (payload.type === "message") {
+            state.conversations.push(payload.data);
+            renderConversations();
+          } else if (payload.type === "evolution") {
+            state.evolutions.unshift({
+              epoch: state.latestEpoch,
+              agent_id: payload.agentId,
+              prev_gen: payload.prev_gen,
+              new_gen: payload.new_gen,
+              trait_changes: payload.trait_changes,
+              learned_insight: payload.learned_insight
+            });
+            // Update agent traits in state
+            const ag = state.agents.find(a => a.id === payload.agentId);
+            if (ag) {
+              ag.generation = payload.new_gen;
+              ag.traits = payload.new_traits;
+            }
+            renderAgents();
+            renderEvolutions();
+          } else if (payload.type === "epoch_end") {
+            state.isEpochRunning = false;
+            loadState(); // Refresh full state
+          } else if (payload.type === "autoplay") {
+            state.isAutoPlaying = payload.active;
+            renderAll();
+          } else if (payload.type === "reset") {
+            loadState();
+          }
+        } catch (err) {
+          console.error("SSE parse error:", err);
+        }
+      };
+
+      evtSource.onerror = () => {
+        // Reconnects automatically
+      };
+    }
+
+    // Initialize
+    loadState();
+    setupSSE();
+    // Poll state every 4s to ensure robustness
+    setInterval(loadState, 4000);
+  </script>
+</body>
+</html>
