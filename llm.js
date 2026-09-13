@@ -3,25 +3,51 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const MODEL = process.env.OPENAI_MODEL || "gpt-5.4-mini";
-const API_KEY = process.env.OPENAI_API_KEY?.trim();
-const BASE_URL = process.env.OPENAI_BASE_URL?.trim() || undefined;
+let runtimeModel = process.env.OPENAI_MODEL || "gpt-5.4-mini";
+let runtimeApiKey = process.env.OPENAI_API_KEY?.trim() || "";
+
+export function setApiKey(key) {
+  runtimeApiKey = (key || "").trim();
+  process.env.OPENAI_API_KEY = runtimeApiKey;
+  openaiClient = null;
+}
+
+export function setModel(model) {
+  if (model) {
+    runtimeModel = model.trim();
+    process.env.OPENAI_MODEL = runtimeModel;
+    openaiClient = null;
+  }
+}
+
+export function getModel() {
+  return runtimeModel || process.env.OPENAI_MODEL || "gpt-5.4-mini";
+}
 
 let openaiClient = null;
 
 export function getClient() {
-  if (!API_KEY) return null;
+  const key = runtimeApiKey || process.env.OPENAI_API_KEY?.trim();
+  if (!key) return null;
   if (!openaiClient) {
     openaiClient = new OpenAI({
-      apiKey: API_KEY,
-      baseURL: BASE_URL,
+      apiKey: key,
+      baseURL: process.env.OPENAI_BASE_URL?.trim() || undefined,
     });
   }
   return openaiClient;
 }
 
 export function isLiveOpenAiConfigured() {
-  return Boolean(API_KEY && API_KEY.length > 5);
+  const key = runtimeApiKey || process.env.OPENAI_API_KEY?.trim();
+  return Boolean(key && key.length > 5);
+}
+
+export function getMaskedApiKey() {
+  const key = runtimeApiKey || process.env.OPENAI_API_KEY?.trim();
+  if (!key) return "";
+  if (key.length <= 8) return "••••••••";
+  return key.slice(0, 3) + "..." + key.slice(-4);
 }
 
 /**
@@ -73,7 +99,7 @@ Respond ONLY with valid JSON in this exact structure:
 }`;
 
   const completion = await client.chat.completions.create({
-    model: MODEL,
+    model: getModel(),
     messages: [
       { role: "system", content: agent.system_prompt },
       { role: "user", content: prompt }
@@ -151,7 +177,7 @@ Respond ONLY with valid JSON in this exact format:
 }`;
 
   const completion = await client.chat.completions.create({
-    model: MODEL,
+    model: getModel(),
     messages: [
       {
         role: "system",

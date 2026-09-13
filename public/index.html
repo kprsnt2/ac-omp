@@ -157,6 +157,49 @@
       border-color: #10b981;
       color: #10b981;
     }
+    .api-key-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(18, 24, 38, 0.8);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 0.25rem 0.5rem;
+    }
+
+    .key-icon {
+      font-size: 0.85rem;
+    }
+
+    #api-key-input {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-family: monospace;
+      font-size: 0.78rem;
+      outline: none;
+      width: 175px;
+    }
+
+    #api-key-input::placeholder {
+      color: var(--text-muted);
+      font-family: inherit;
+    }
+
+    .btn-sm {
+      padding: 0.25rem 0.6rem;
+      font-size: 0.72rem;
+      border-radius: 6px;
+      background: #1f293d;
+      border: 1px solid var(--card-border);
+      color: var(--text-dim);
+    }
+
+    .btn-sm:hover {
+      background: #28354f;
+      color: #fff;
+      border-color: var(--nexus);
+    }
 
     main {
       padding: 1.5rem 2rem;
@@ -528,6 +571,11 @@
       </div>
     </div>
 
+    <div class="api-key-bar">
+      <span class="key-icon">🔑</span>
+      <input type="password" id="api-key-input" placeholder="Enter OpenAI Key (sk-...)" autocomplete="off" />
+      <button class="btn-sm" id="btn-save-key" onclick="saveApiKey()">Save Key</button>
+    </div>
     <div class="controls">
       <button class="btn-primary" id="btn-epoch" onclick="triggerEpoch()">
         <span>▶</span> <span>Run Epoch</span>
@@ -613,6 +661,13 @@
       document.getElementById("model-name").textContent = `${state.model} (${state.isLiveOpenAi ? "Live OpenAI" : "Adaptive Engine"})`;
       document.getElementById("model-dot").style.background = state.isLiveOpenAi ? "#10b981" : "#f59e0b";
       document.getElementById("model-dot").style.boxShadow = state.isLiveOpenAi ? "0 0 8px #10b981" : "0 0 8px #f59e0b";
+
+      const keyInput = document.getElementById("api-key-input");
+      if (state.maskedApiKey) {
+        keyInput.placeholder = `Active: ${state.maskedApiKey}`;
+      } else {
+        keyInput.placeholder = "Enter OpenAI Key (sk-...)";
+      }
 
       // Controls
       const btnEpoch = document.getElementById("btn-epoch");
@@ -838,6 +893,30 @@
         // Reconnects automatically
       };
     }
+    async function saveApiKey() {
+      const input = document.getElementById("api-key-input");
+      const key = input.value.trim();
+      if (!key) return;
+      try {
+        const res = await fetch("/api/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ apiKey: key })
+        });
+        const data = await res.json();
+        if (data.success) {
+          input.value = "";
+          input.placeholder = `Active: ${data.maskedApiKey}`;
+          state.isLiveOpenAi = data.isLiveOpenAi;
+          state.maskedApiKey = data.maskedApiKey;
+          renderAll();
+          alert("OpenAI API Key connected! Agents will now converse with real gpt-5.4-mini.");
+        }
+      } catch (err) {
+        alert("Failed to save key: " + err.message);
+      }
+    }
+
 
     // Initialize
     loadState();
